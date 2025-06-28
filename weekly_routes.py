@@ -15,7 +15,7 @@ weekly_currency_map = {
     },
     'USD': {
         'model_path': 'atm_weekly_usd_cash_forecast_model.pkl',
-        'data_path': os.path.join('data', 'usd_weekly_base_data.csv'),
+        'data_path': os.path.join('data', 'base_data.csv'),
         'model': None,
         'atm_list': []
     }
@@ -26,7 +26,6 @@ for currency in weekly_currency_map:
     try:
         model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), weekly_currency_map[currency]['model_path'])
         model_data = joblib.load(model_path)
-        label_encoder = model_data['label_encoder']
         
         # Get path to current currency's data file
         data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), weekly_currency_map[currency]['data_path'])
@@ -37,7 +36,7 @@ for currency in weekly_currency_map:
         
         atm_list = sorted(term_ids)
     
-        weekly_currency_map[currency]['model'] = model_data['model']
+        weekly_currency_map[currency]['model'] = model_data['model'] if isinstance(model_data, dict) and 'model' in model_data else model_data
         weekly_currency_map[currency]['atm_list'] = atm_list
         
     except Exception as e:
