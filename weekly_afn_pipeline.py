@@ -19,12 +19,9 @@ def preprocess_input(df):
         df['TERM_ID'] = df['TERM_ID'].astype(str)
         df['TRN_DT'] = pd.to_datetime(df['TRN_DT'], format='%Y-%m-%d')
 
-        today = pd.Timestamp.today().normalize()
-        last_fri = today - pd.Timedelta(days=(today.weekday() - 5) % 7)
-
         df = df.sort_values(by='TRN_DT').reset_index(drop=True)
-        all_weeks = pd.date_range(start=df['TRN_DT'].min(), end=last_fri, freq='W-SAT')
-
+        all_weeks = pd.date_range(start=df['TRN_DT'].min(), end=df['TRN_DT'].max(), freq='W-SAT')
+        
         weekly_data = (
             df.set_index('TRN_DT')
             .groupby('TERM_ID')
@@ -58,7 +55,9 @@ def preprocess_input(df):
         weekly_data['diff_trn_1'] = grouped['TRN_AMOUNT'].diff(1)
 
         # Drop dates and missing values
-        processed = weekly_data.drop(columns=['TRN_DT']).dropna()
+        processed = weekly_data.drop(columns=['TRN_DT'])
+        # Optionally, only drop rows where TRN_AMOUNT is NaN
+        processed = processed[~processed['TRN_AMOUNT'].isna()]
 
         # One-hot encode TERM_ID
         processed = pd.get_dummies(processed, columns=['TERM_ID'])
@@ -92,15 +91,18 @@ def predict_future():
         days_until_sat = (5 - last_date.weekday()) % 7
         next_sat = last_date + pd.Timedelta(days=days_until_sat)
 
+        print("ATM list:", atm_list)
         for term_id in atm_list:
             term_history = weekly_data[weekly_data['TERM_ID'] == term_id]
+            print(f"ATM {term_id} term_history:\n", term_history.tail())
             if term_history.empty:
                 continue
 
-            last_entry = term_history.sort_values('TRN_DT').iloc[-1]
-            if pd.isna(last_entry['TRN_AMOUNT']):
+            valid_history = term_history[~term_history['TRN_AMOUNT'].isna()]
+            if valid_history.empty:
                 print(f"ATM {term_id} has no data, skipping.")
                 continue
+            last_entry = valid_history.sort_values('TRN_DT').iloc[-1]
 
             predicted_week = last_entry['TRN_DT'] + timedelta(weeks=1)
             start_of_month = pd.Timestamp(predicted_week).to_period('M').start_time
