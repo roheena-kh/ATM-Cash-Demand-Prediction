@@ -14,19 +14,22 @@ def preprocess_input(df):
     """Preprocess data for weekly prediction"""
     try:
         #select only usd transactions
+        
         df = df[df['TXN_CCY_CODE'] == "USD"].drop('TXN_CCY_CODE', axis=1)
         df = df[df['TRN_AMOUNT'] != 0]
+        
         # Convert TERM_ID using the saved LabelEncoder
         df['TERM_ID'] = label_encoder.transform(df['TERM_ID'])
         df['TRN_DT'] = pd.to_datetime(df['TRN_DT'], format='%Y-%m-%d')
-
-        today = pd.Timestamp.today().normalize()
-        last_fri = today - pd.Timedelta(days=(today.weekday() -5) % 7)
+        
+        # today = pd.Timestamp.today().normalize()
+        # last_fri = today - pd.Timedelta(days=(today.weekday() -5) % 7)
 
         df = df.sort_values(by='TRN_DT').reset_index(drop=True)
 
-        all_weeks = pd.date_range(start=df['TRN_DT'].min(), end=last_fri, freq='W-SAT')
+        # all_weeks = pd.date_range(start=df['TRN_DT'].min(), end=last_fri, freq='W-SAT')
         
+        all_weeks = pd.date_range(start=df['TRN_DT'].min(), end=df['TRN_DT'].max())
         # Group daily transactions to weekly
         weekly_data = (
             df.set_index('TRN_DT')
@@ -35,7 +38,7 @@ def preprocess_input(df):
             .agg({'TRN_AMOUNT': 'sum'})
             .reset_index()
         )
-
+        print("Weekly data after resample:", weekly_data.shape)
         all_atms = df['TERM_ID'].unique()
         filled_data = []
 
@@ -85,7 +88,7 @@ def predict_future():
         # Get historical data with absolute path
         DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'base_data.csv')
         df = pd.read_csv(DATA_PATH)
-        
+        print(df.head(), df.shape)
         # Preprocess data (including TERM_ID encoding)
         processed_data, weekly_data = preprocess_input(df)
         
@@ -100,13 +103,12 @@ def predict_future():
         
         for term_id in atm_list:
             term_history = weekly_data[weekly_data['TERM_ID'] == term_id]
-            
-            if term_history.empty:
+            valid_history = term_history[~term_history['TRN_AMOUNT'].isna()]
+            if valid_history.empty:
                 continue
-                
-            # Calculate next week features
-            last_entry = term_history.sort_values('TRN_DT').iloc[-1]
+            last_entry = valid_history.sort_values('TRN_DT').iloc[-1]
             predicted_week = last_entry['TRN_DT'] + timedelta(weeks=1)
+           
             
             # ====== START of additional logic for FIRST_WEEK_OF_MONTH and WEEK_OF_MONTH ======
             start_of_month = pd.Timestamp(predicted_week).to_period('M').start_time
@@ -146,7 +148,7 @@ def predict_future():
             
             predictions.append({
                 'ATM_ID': label_encoder.inverse_transform([term_id])[0],
-                'NEXT_WEEK_START': next_sat.strftime('%Y-%m-%d'),
+                'NEXT_WEEK_START': predicted_week.strftime('%Y-%m-%d'),
                 'PREDICTED_AMOUNT': int(round(predicted_amount, 0))
             })
         

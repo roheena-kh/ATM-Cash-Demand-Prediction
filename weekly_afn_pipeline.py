@@ -32,8 +32,7 @@ def preprocess_input(df):
 
         all_atms = df['TERM_ID'].unique()
         filled_data = []
-
-       # ...existing code...
+       
         for term_id in all_atms:
             atm_data = weekly_data[weekly_data['TERM_ID'] == term_id].set_index('TRN_DT')
             atm_data = atm_data.reindex(all_weeks, fill_value=np.nan)  # Use np.nan, not 0
