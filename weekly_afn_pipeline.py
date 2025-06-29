@@ -2,7 +2,7 @@ import pandas as pd
 import joblib
 import os
 from datetime import datetime, timedelta
-
+import numpy as np
 # Load model and scalers
 MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -36,9 +36,10 @@ def preprocess_input(df):
         all_atms = df['TERM_ID'].unique()
         filled_data = []
 
+       # ...existing code...
         for term_id in all_atms:
             atm_data = weekly_data[weekly_data['TERM_ID'] == term_id].set_index('TRN_DT')
-            atm_data = atm_data.reindex(all_weeks, fill_value=0)
+            atm_data = atm_data.reindex(all_weeks, fill_value=np.nan)  # Use np.nan, not 0
             atm_data['TERM_ID'] = term_id
             atm_data = atm_data.reset_index().rename(columns={'index': 'TRN_DT'})
             filled_data.append(atm_data)
@@ -86,8 +87,10 @@ def predict_future():
         # Build list of all TERM_ID dummy columns seen during training
         all_dummy_cols = [col for col in model_features if col.startswith("TERM_ID_")]
 
-        today = pd.Timestamp.today().normalize()
-        next_sat = today + pd.Timedelta(days=(5 - today.weekday()) % 7)
+        last_date = weekly_data['TRN_DT'].max()
+        # Find the next Saturday after the last date in your data
+        days_until_sat = (5 - last_date.weekday()) % 7
+        next_sat = last_date + pd.Timedelta(days=days_until_sat)
 
         for term_id in atm_list:
             term_history = weekly_data[weekly_data['TERM_ID'] == term_id]
@@ -95,19 +98,17 @@ def predict_future():
                 continue
 
             last_entry = term_history.sort_values('TRN_DT').iloc[-1]
-            predicted_week = last_entry['TRN_DT'] + timedelta(weeks=1)
-            if predicted_week < next_sat - timedelta(weeks=1):
+            if pd.isna(last_entry['TRN_AMOUNT']):
+                print(f"ATM {term_id} has no data, skipping.")
                 continue
 
+            predicted_week = last_entry['TRN_DT'] + timedelta(weeks=1)
             start_of_month = pd.Timestamp(predicted_week).to_period('M').start_time
             first_week = start_of_month.isocalendar().week
             week_of_year = predicted_week.isocalendar().week
             week_of_month = week_of_year - first_week + 1
 
-            # Initialize feature_row with all zeros for every model feature
             feature_row = dict.fromkeys(model_features, 0)
-
-            # Fill in actual values
             feature_row.update({
                 'WEEK': last_entry['WEEK'] + 1,
                 'WEEK_OF_YEAR': week_of_year,
@@ -120,11 +121,9 @@ def predict_future():
                 'diff_trn_1': last_entry['TRN_AMOUNT'] - term_history['TRN_AMOUNT'].iloc[-2] if len(term_history) > 1 else 0,
             })
 
-            # 2. Set all dummy columns to 0
             for col in all_dummy_cols:
                 feature_row[col] = 0
 
-            # 3. Set correct dummy TERM_ID to 1
             dummy_col = f"TERM_ID_{term_id}"
             if dummy_col in all_dummy_cols:
                 feature_row[dummy_col] = 1
@@ -132,29 +131,18 @@ def predict_future():
                 print(f"[Warning] TERM_ID {term_id} not seen during training. Skipping.")
                 continue
 
-            # 4. Create DataFrame
             feature_df = pd.DataFrame([feature_row])
-
-            
-
-            # Fill any missing columns with 0 (e.g., missing TERM_ID dummy)
             for col in model_features:
                 if col not in feature_df.columns:
                     feature_df[col] = 0
-
-            # Reorder columns to match model training order
             feature_df = feature_df[model_features]
 
-            # 6. Predict
             predicted_amount = model.predict(feature_df)[0]
-
-            # 7. Store the result
             predictions.append({
                 'ATM_ID': term_id,
-                'NEXT_WEEK_START': next_sat.strftime('%Y-%m-%d'),
+                'NEXT_WEEK_START': predicted_week.strftime('%Y-%m-%d'),
                 'PREDICTED_AMOUNT': int(round(predicted_amount, 0))
             })
-
 
         return pd.DataFrame(predictions)
 
