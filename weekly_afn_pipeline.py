@@ -51,7 +51,7 @@ def preprocess_input(df):
         weekly_data["mean_trn_2"] = grouped['TRN_AMOUNT'].transform(lambda x: x.rolling(2, min_periods=1).mean())
         weekly_data["mean_trn_4"] = grouped['TRN_AMOUNT'].transform(lambda x: x.rolling(4, min_periods=1).mean())
         weekly_data["mean_trn_6"] = grouped['TRN_AMOUNT'].transform(lambda x: x.rolling(6, min_periods=1).mean())
-        weekly_data['diff_trn_1'] = grouped['TRN_AMOUNT'].diff(1)
+        # weekly_data['diff_trn_1'] = grouped['TRN_AMOUNT'].diff(1)
 
         # Drop dates and missing values
         processed = weekly_data.drop(columns=['TRN_DT'])
@@ -118,8 +118,8 @@ def predict_future():
                 'lag_trn_1': last_entry['TRN_AMOUNT'],
                 'mean_trn_2': term_history['TRN_AMOUNT'].tail(2).mean(),
                 'mean_trn_4': term_history['TRN_AMOUNT'].tail(4).mean(),
-                'mean_trn_6': term_history['TRN_AMOUNT'].tail(6).mean(),
-                'diff_trn_1': last_entry['TRN_AMOUNT'] - term_history['TRN_AMOUNT'].iloc[-2] if len(term_history) > 1 else 0,
+                'mean_trn_6': term_history['TRN_AMOUNT'].tail(6).mean()
+                # 'diff_trn_1': last_entry['TRN_AMOUNT'] - term_history['TRN_AMOUNT'].iloc[-2] if len(term_history) > 1 else 0,
             })
 
             for col in all_dummy_cols:
