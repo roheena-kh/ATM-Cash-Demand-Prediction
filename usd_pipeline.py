@@ -3,6 +3,7 @@ import joblib
 import os
 from datetime import datetime, timedelta
 
+
 # Load model from current directory
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'usd_atm_cash_forecast_model.pkl')
 model = joblib.load(MODEL_PATH)
