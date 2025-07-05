@@ -163,6 +163,10 @@
                         ${prediction.predicted_amount.toLocaleString()} ${data.currency}
                       </div>
                     </div>
+                    <div class="atm-card" id="atm-{{ atm_id }}">
+                    
+                      <div>Available Cash: <span class="available-cash" data-atm="{{ atm_id }}">Loading...</span></div>
+                    </div>
                   </div>
                 </div>
               `).join('');
@@ -180,6 +184,21 @@
         errorDiv.style.display = "block";
         window.scrollTo(0, 0);
       }
+    </script>
+
+    <script>
+    function updateAvailableCash() {
+      fetch('/api/available-cash')
+        .then(response => response.json())
+        .then(data => {
+          document.querySelectorAll('.available-cash').forEach(span => {
+            const atmId = span.getAttribute('data-atm');
+            span.textContent = data[atmId] !== undefined ? data[atmId] : 'N/A';
+          });
+        });
+    }
+    setInterval(updateAvailableCash, 10000); // Update every 10 seconds
+    updateAvailableCash();
     </script>
   </body>
 </html>
