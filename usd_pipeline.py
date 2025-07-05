@@ -3,6 +3,8 @@ import joblib
 import os
 from datetime import datetime, timedelta
 
+usd_atms = ['ABI0034', 'ABI0040', 'ABI0043', 'ABI0051', 'ABI0090', 'ABI0101',
+       'ABI0123', 'ABI0114', 'ABI0100', 'ABI0113', 'ABI0045', 'ABI0046']
 
 # Load model from current directory
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'usd_atm_cash_forecast_model.pkl')
@@ -72,10 +74,8 @@ def predict_future():
         DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'base_data.csv')
         df = pd.read_csv(DATA_PATH)
         
-        # Extract ATM list from model features
-        atm_features = [f.split('_')[1] for f in model.get_booster().feature_names 
-                        if f.startswith('TERM_')]
-        atm_list = list(set(atm_features))
+        atm_list = usd_atms  # predefined ATM list
+        print("Predicting for these ATMs:", atm_list)
         
         # Preprocess data to get grouped transactions and features
         processed_data, original_grouped = preprocess_input(df, atm_list)
