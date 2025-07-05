@@ -2,6 +2,8 @@ from flask import Flask, render_template
 from daily_routes import daily_bp
 from weekly_routes import weekly_bp
 from db_connection import fetch_and_save_data
+from available_cash import get_available_cash
+from flask import jsonify
 import os
 
 app = Flask(__name__,
@@ -11,6 +13,11 @@ app = Flask(__name__,
 # Register blueprints
 app.register_blueprint(daily_bp, url_prefix='/daily')
 app.register_blueprint(weekly_bp, url_prefix='/weekly')
+
+@app.route('/api/available-cash')
+def api_available_cash():
+    data = get_available_cash()
+    return jsonify(data)
 
 @app.route('/')
 def home():
