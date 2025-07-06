@@ -163,10 +163,21 @@
                         ${prediction.predicted_amount.toLocaleString()} ${data.currency}
                       </div>
                     </div>
-                    <div class="atm-card" id="atm-{{ atm_id }}">
-                    
-                      <div>Available Cash: <span class="available-cash" data-atm="{{ atm_id }}">Loading...</span></div>
+
+                    <!-- Available Cash Label -->
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                      <div>
+                        <small class="text-muted">Available Cash:</small>
+                      </div>
                     </div>
+
+                    <!-- Available Amount Badge -->
+                    <div class="mt-2 text-end">
+                      <div class="amount-badge available-cash" data-atm="${prediction.atm_id}">
+                        Loading...
+                      </div>
+                    </div>
+                    
                   </div>
                 </div>
               `).join('');
