@@ -1,6 +1,5 @@
 import pyodbc
-
-import pyodbc
+from pprint import pprint
 
 def get_available_cash():
     server = ''
@@ -18,6 +17,24 @@ def get_available_cash():
         where 
             CAST([postingdatetime] AS DATE) = CAST(CURRENT_TIMESTAMP AS DATE)
     """
+
+    result = {}
+    with pyodbc.connect(conn_str) as conn:
+        cursor = conn.cursor()
+        cursor.execute(query)
+        for row in cursor.fetchall():
+            term_id = row[0]
+            afn_cash = row[3]
+            usd_cash = row[4]
+            result[term_id] = {
+                "AFN_Available": afn_cash,
+                "USD_Available": usd_cash
+            }
+    return result
+
+if __name__ == "__main__":
+    pprint(get_available_cash())
+
     
  
 
