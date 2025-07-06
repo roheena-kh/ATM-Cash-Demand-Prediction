@@ -14,14 +14,14 @@ app = Flask(__name__,
 app.register_blueprint(daily_bp, url_prefix='/daily')
 app.register_blueprint(weekly_bp, url_prefix='/weekly')
 
+@app.route('/')
+def home():
+    return render_template('index.html')
+
 @app.route('/api/available-cash')
 def api_available_cash():
     data = get_available_cash()
     return jsonify(data)
-
-@app.route('/')
-def home():
-    return render_template('index.html')
 
 if __name__ == '__main__':
     fetch_and_save_data()
