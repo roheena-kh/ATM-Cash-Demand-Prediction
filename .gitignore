@@ -10,3 +10,4 @@ data/base_data_test.xlsx
 data/Pictures - Shortcut.lnk
 weekly_AFN_with_XGBoost.txt
 available_cash_db.py
+available_cash.py
