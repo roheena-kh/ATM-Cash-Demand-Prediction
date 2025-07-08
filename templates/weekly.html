@@ -179,7 +179,7 @@
                     </div>
                     
                   </div>
-                  
+
                   </div>
                 </div>
               `).join('');
@@ -198,5 +198,37 @@
         window.scrollTo(0, 0);
       }
     </script>
+    
+    <script>
+    function updateAvailableCash() {
+      const selectedCurrency = document.getElementById("currencySelect")?.value || 
+                              document.getElementById("selectedCurrency")?.textContent;
+
+      fetch('/api/available-cash')
+        .then(response => response.json())
+        .then(data => {
+          document.querySelectorAll('.available-cash').forEach(span => {
+            const atmId = span.getAttribute('data-atm');
+            if (data[atmId]) {
+              const afn = data[atmId].AFN.toLocaleString();
+              const usd = data[atmId].USD.toLocaleString();
+
+              if (selectedCurrency === "AFN") {
+                span.innerHTML = `${afn} AFN`;
+              } else if (selectedCurrency === "USD") {
+                span.innerHTML = `${usd} USD`;
+              } else {
+                span.innerHTML = `${afn}<br>${usd}`;
+              }
+            } else {
+              span.textContent = 'No Data Availible';
+            }
+          });
+        });
+    }
+    setInterval(updateAvailableCash, 10000);
+    updateAvailableCash();
+    </script>
+    
   </body>
 </html>
